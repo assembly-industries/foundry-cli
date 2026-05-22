@@ -16,9 +16,9 @@ curl -fsSL https://github.com/assembly-industries/foundry-cli/releases/latest/do
 cd my-project
 foundry init
 
-# Launch agents with this folder's token
-source .foundry/env && claude
-source .foundry/env && cursor .
+# Token is embedded in .mcp.json — just launch the agent
+claude
+cursor .
 
 # Change token later in this folder only
 foundry init --update-token
@@ -32,12 +32,11 @@ foundry status
 
 | File | Purpose |
 |------|---------|
-| `.mcp.json` | MCP config for Claude Code |
+| `.mcp.json` | MCP config for Claude Code (token embedded, gitignored) |
 | `.claude/skills/foundry/SKILL.md` | Claude Code skill |
-| `.cursor/mcp.json` | MCP config for Cursor |
+| `.cursor/mcp.json` | MCP config for Cursor (token embedded, gitignored) |
 | `.cursor/rules/foundry-agent.mdc` | Cursor rule |
 | `.foundry/config` | This folder's token, URL, app slug (gitignored) |
-| `.foundry/env` | `export ASSEMBLY_FOUNDRY_TOKEN=...` for this folder (gitignored) |
 
 ## Development
 

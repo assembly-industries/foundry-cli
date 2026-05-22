@@ -22,7 +22,24 @@ error()   { echo -e "${RED}✖${RESET} $*" >&2; }
 header()  { echo -e "\n${BOLD}$*${RESET}"; }
 
 # ─── Helpers ───────────────────────────────────────────────────────────────────
-ensure_dir() { mkdir -p "$1"; }
+ensure_gitignore_entry() {
+  local entry="$1"
+  if [ -f ".gitignore" ]; then
+    if ! grep -qxF "$entry" .gitignore 2>/dev/null; then
+      echo "$entry" >> .gitignore
+      success "Added ${DIM}$entry${RESET} to .gitignore"
+    fi
+  else
+    echo "$entry" > .gitignore
+    success "Created .gitignore with ${DIM}$entry${RESET}"
+  fi
+}
+
+ensure_foundry_gitignore() {
+  ensure_gitignore_entry ".foundry/"
+  ensure_gitignore_entry ".mcp.json"
+  ensure_gitignore_entry ".cursor/mcp.json"
+}
 
 write_file() {
   local path="$1" content="$2"
@@ -55,10 +72,8 @@ FOUNDRY_APP_SLUG="$FOUNDRY_APP_SLUG"
 CFG
 
   cat > "$FOUNDRY_ENV_FILE" <<ENV
-# Foundry folder-local environment
-# Source before launching an agent from THIS project directory:
-#   source .foundry/env && claude
-#   source .foundry/env && cursor .
+# Optional: source this for shell scripts in this folder.
+# Claude Code and Cursor read the token from .mcp.json / .cursor/mcp.json directly.
 export ASSEMBLY_FOUNDRY_TOKEN="$FOUNDRY_TOKEN"
 export ASSEMBLY_MCP_URL="$FOUNDRY_MCP_URL"
 ENV
@@ -117,12 +132,12 @@ print_project_banner() {
   echo -e "  ${BLUE}$project_dir${RESET}"
   echo ""
   echo -e "${BOLD}Files that will be created or updated here:${RESET}"
-  echo -e "  ${DIM}.mcp.json${RESET}                         Claude Code MCP config"
+  echo -e "  ${DIM}.mcp.json${RESET}                         Claude Code MCP config (token embedded, gitignored)"
   echo -e "  ${DIM}.claude/skills/foundry/SKILL.md${RESET}   Claude Code skill"
-  echo -e "  ${DIM}.cursor/mcp.json${RESET}                  Cursor MCP config"
+  echo -e "  ${DIM}.cursor/mcp.json${RESET}                  Cursor MCP config (token embedded, gitignored)"
   echo -e "  ${DIM}.cursor/rules/foundry-agent.mdc${RESET}   Cursor rule"
   echo -e "  ${DIM}.foundry/config${RESET}                   Local token + settings (gitignored)"
-  echo -e "  ${DIM}.foundry/env${RESET}                      Folder-local env exports (gitignored)"
+  echo -e "  ${DIM}.foundry/env${RESET}                      Optional shell exports (gitignored)"
   echo ""
   echo -e "${DIM}Run foundry init separately in each coding project. Config does not leak across folders.${RESET}"
   echo ""
@@ -409,15 +424,7 @@ cmd_init() {
   save_config
 
   # ── .gitignore guard ─────────────────────────────────────────────────────
-  if [ -f ".gitignore" ]; then
-    if ! grep -qxF '.foundry/' .gitignore 2>/dev/null; then
-      echo '.foundry/' >> .gitignore
-      success "Added ${DIM}.foundry/${RESET} to .gitignore"
-    fi
-  else
-    echo '.foundry/' > .gitignore
-    success "Created .gitignore with ${DIM}.foundry/${RESET}"
-  fi
+  ensure_foundry_gitignore
 
   # ── Claude Code setup ───────────────────────────────────────────────────
   header "Claude Code"
@@ -428,9 +435,9 @@ cmd_init() {
   "mcpServers": {
     "assembly-foundry": {
       "type": "streamable-http",
-      "url": "\${ASSEMBLY_MCP_URL:-$FOUNDRY_MCP_URL}",
+      "url": "$FOUNDRY_MCP_URL",
       "headers": {
-        "Authorization": "Bearer \${ASSEMBLY_FOUNDRY_TOKEN}"
+        "Authorization": "Bearer $FOUNDRY_TOKEN"
       }
     }
   }
@@ -438,7 +445,7 @@ cmd_init() {
 JSON
 )
   write_file ".mcp.json" "$claude_mcp"
-  success "Created: ${DIM}.mcp.json${RESET}"
+  success "Created: ${DIM}.mcp.json${RESET} (token embedded)"
 
   ensure_dir ".claude/skills/foundry"
   write_file ".claude/skills/foundry/SKILL.md" "$SKILL_CONTENT"
@@ -454,7 +461,7 @@ JSON
     "assembly-foundry": {
       "url": "$FOUNDRY_MCP_URL",
       "headers": {
-        "Authorization": "Bearer \${ASSEMBLY_FOUNDRY_TOKEN}"
+        "Authorization": "Bearer $FOUNDRY_TOKEN"
       }
     }
   }
@@ -463,27 +470,23 @@ JSON
 )
   ensure_dir ".cursor"
   write_file ".cursor/mcp.json" "$cursor_mcp"
-  success "Created: ${DIM}.cursor/mcp.json${RESET}"
+  success "Created: ${DIM}.cursor/mcp.json${RESET} (token embedded)"
 
   ensure_dir ".cursor/rules"
   write_file ".cursor/rules/foundry-agent.mdc" "$CURSOR_RULE_CONTENT"
   success "Created: ${DIM}.cursor/rules/foundry-agent.mdc${RESET}"
 
-  # ── Env var hint ─────────────────────────────────────────────────────────
+  # ── Launch hint ───────────────────────────────────────────────────────────
   header "Start coding from this folder"
   echo ""
   echo -e "Foundry config is ${BOLD}folder-specific${RESET}. Launch agents from:"
   echo -e "  ${BLUE}$(pwd)${RESET}"
   echo ""
-  echo -e "Load this project's token before starting an agent:"
+  echo -e "Your service token is already in ${DIM}.mcp.json${RESET} and ${DIM}.cursor/mcp.json${RESET}."
+  echo -e "No extra env setup needed — just run:"
   echo ""
-  echo -e "  ${BOLD}source .foundry/env && claude${RESET}"
-  echo -e "  ${BOLD}source .foundry/env && cursor .${RESET}"
-  echo ""
-  echo -e "Or export manually for this shell:"
-  echo ""
-  echo -e "  ${BOLD}export ASSEMBLY_FOUNDRY_TOKEN=\"$(mask_token "$FOUNDRY_TOKEN")\"${RESET}"
-  echo -e "  ${DIM}# full token saved in .foundry/env${RESET}"
+  echo -e "  ${BOLD}claude${RESET}"
+  echo -e "  ${BOLD}cursor .${RESET}"
 
   if [ -n "${FOUNDRY_APP_SLUG:-}" ]; then
     echo ""
@@ -558,10 +561,10 @@ cmd_status() {
     ok=false
   fi
 
-  if [ -n "${ASSEMBLY_FOUNDRY_TOKEN:-}" ]; then
-    success "Current shell has ASSEMBLY_FOUNDRY_TOKEN set ($(mask_token "$ASSEMBLY_FOUNDRY_TOKEN"))"
+  if [ -f "$FOUNDRY_CONFIG_FILE" ] && [ -f ".mcp.json" ]; then
+    success "Service token configured in MCP files for this folder"
   else
-    warn "Current shell has no ASSEMBLY_FOUNDRY_TOKEN — run ${BOLD}source .foundry/env${RESET} in this folder"
+    warn "Token/MCP config missing — run ${BOLD}foundry init${RESET} in this directory"
     ok=false
   fi
 
@@ -603,10 +606,9 @@ cmd_help() {
   echo ""
   echo -e "${BOLD}EXAMPLES${RESET}"
   echo "  cd my-project && foundry init"
-  echo "  FOUNDRY_TOKEN=sat_xxx foundry init"
+  echo "  claude"
+  echo "  cursor ."
   echo "  foundry init --token sat_new..."
-  echo "  foundry init --update-token"
-  echo "  source .foundry/env && claude"
   echo "  foundry status"
   echo ""
   echo -e "${BOLD}ENVIRONMENT${RESET}"
