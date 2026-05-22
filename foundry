@@ -22,6 +22,8 @@ error()   { echo -e "${RED}✖${RESET} $*" >&2; }
 header()  { echo -e "\n${BOLD}$*${RESET}"; }
 
 # ─── Helpers ───────────────────────────────────────────────────────────────────
+ensure_dir() { mkdir -p "$1"; }
+
 ensure_gitignore_entry() {
   local entry="$1"
   if [ -f ".gitignore" ]; then
