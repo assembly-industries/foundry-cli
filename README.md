@@ -10,41 +10,43 @@ curl -fsSL https://github.com/assembly-industries/foundry-cli/releases/latest/do
 
 ## Usage
 
-`foundry init` is **folder-specific** — run it in each project directory, similar to how Claude Code uses project-local config.
+`foundry init` is **folder-specific** — run it in each project directory.
+
+Secrets live in `.foundry/env` (gitignored). MCP configs use env vars. **direnv** auto-loads secrets when you `cd` into the folder. `foundry init` runs `direnv allow` for you.
 
 ```bash
 cd my-project
 foundry init
 
-# Token is embedded in .mcp.json — just launch the agent
-claude
-cursor .
+# With direnv (recommended)
+cd my-project && claude
 
-# Change token later in this folder only
-foundry init --update-token
-foundry init --token sat_new...
-
-# Check this folder's setup
-foundry status
+# Without direnv
+source .foundry/env && claude
 ```
 
-## What `foundry init` creates (in the current folder)
+### One-time direnv setup
+
+```bash
+brew install direnv
+echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+## What `foundry init` creates
 
 | File | Purpose |
 |------|---------|
-| `.mcp.json` | MCP config for Claude Code (token embedded, gitignored) |
-| `.claude/skills/foundry/SKILL.md` | Claude Code skill |
-| `.cursor/mcp.json` | MCP config for Cursor (token embedded, gitignored) |
-| `.cursor/rules/foundry-agent.mdc` | Cursor rule |
-| `.foundry/config` | This folder's token, URL, app slug (gitignored) |
+| `.mcp.json` | Claude Code MCP config (env var references, no secrets) |
+| `.cursor/mcp.json` | Cursor MCP config (env var references, no secrets) |
+| `.envrc` | direnv loader for `.foundry/env` |
+| `.foundry/env` | Folder secrets — gitignored |
+| `.foundry/config` | Folder settings — gitignored |
 
 ## Development
 
-Source of truth lives in the [assembly-api](https://github.com/assembly-industries/assembly-api) monorepo under `cli/`. Releases are published to the public [foundry-cli](https://github.com/assembly-industries/foundry-cli) repo.
-
 ```bash
 cd cli/
-# Re-publish dev build (same version, replaces release assets)
 gh release upload v0.1.0 foundry install.sh \
   --repo assembly-industries/foundry-cli \
   --clobber
