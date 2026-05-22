@@ -4,10 +4,10 @@ set -euo pipefail
 # ─── Foundry CLI Installer ────────────────────────────────────────────────────
 #
 # Usage:
-#   curl -fsSL https://foundry.assembly.industries/install.sh | bash
+#   curl -fsSL https://github.com/assembly-industries/foundry-cli/releases/latest/download/install.sh | bash
 #
 # Or with a specific install directory:
-#   curl -fsSL https://foundry.assembly.industries/install.sh | INSTALL_DIR=~/.local/bin bash
+#   curl -fsSL https://github.com/assembly-industries/foundry-cli/releases/latest/download/install.sh | INSTALL_DIR=~/.local/bin bash
 
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 BINARY_NAME="foundry"
@@ -81,7 +81,7 @@ if ! download "$DOWNLOAD_URL" "$TMP_FILE" 2>/dev/null; then
   echo -e "  • The version ${DIM}$FOUNDRY_VERSION${RESET} doesn't exist"
   echo -e ""
   echo -e "  To publish a release:"
-  echo -e "    ${BOLD}cd cli/ && gh release create v0.1.0 foundry --title 'Foundry CLI v0.1.0'${RESET}"
+  echo -e "    ${BOLD}gh release create v0.1.1 foundry install.sh --repo assembly-industries/foundry-cli --title 'Foundry CLI v0.1.1'${RESET}"
   echo -e ""
   echo -e "  To install manually:"
   echo -e "    ${BOLD}cp cli/foundry /usr/local/bin/foundry && chmod +x /usr/local/bin/foundry${RESET}"
