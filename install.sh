@@ -81,7 +81,7 @@ if ! download "$DOWNLOAD_URL" "$TMP_FILE" 2>/dev/null; then
   echo -e "  • The version ${DIM}$FOUNDRY_VERSION${RESET} doesn't exist"
   echo -e ""
   echo -e "  To publish a release:"
-  echo -e "    ${BOLD}gh release create v0.1.1 foundry install.sh --repo assembly-industries/foundry-cli --title 'Foundry CLI v0.1.1'${RESET}"
+  echo -e "    ${BOLD}gh release upload v0.1.0 foundry install.sh --repo assembly-industries/foundry-cli --clobber${RESET}"
   echo -e ""
   echo -e "  To install manually:"
   echo -e "    ${BOLD}cp cli/foundry /usr/local/bin/foundry && chmod +x /usr/local/bin/foundry${RESET}"

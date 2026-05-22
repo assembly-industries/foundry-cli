@@ -8,28 +8,27 @@ Command-line tool for setting up coding agents (Claude Code, Cursor) to work wit
 curl -fsSL https://github.com/assembly-industries/foundry-cli/releases/latest/download/install.sh | bash
 ```
 
-Or download directly:
-
-```bash
-curl -fsSL https://github.com/assembly-industries/foundry-cli/releases/latest/download/foundry \
-  -o /usr/local/bin/foundry
-chmod +x /usr/local/bin/foundry
-```
-
 ## Usage
 
+`foundry init` is **folder-specific** — run it in each project directory, similar to how Claude Code uses project-local config.
+
 ```bash
-# Interactive setup in your project directory
+cd my-project
 foundry init
 
-# Non-interactive
-FOUNDRY_TOKEN=sat_xxx foundry init
+# Launch agents with this folder's token
+source .foundry/env && claude
+source .foundry/env && cursor .
 
-# Verify configuration
+# Change token later in this folder only
+foundry init --update-token
+foundry init --token sat_new...
+
+# Check this folder's setup
 foundry status
 ```
 
-## What `foundry init` creates
+## What `foundry init` creates (in the current folder)
 
 | File | Purpose |
 |------|---------|
@@ -37,17 +36,17 @@ foundry status
 | `.claude/skills/foundry/SKILL.md` | Claude Code skill |
 | `.cursor/mcp.json` | MCP config for Cursor |
 | `.cursor/rules/foundry-agent.mdc` | Cursor rule |
-| `.foundry/config` | Local config (gitignored) |
+| `.foundry/config` | This folder's token, URL, app slug (gitignored) |
+| `.foundry/env` | `export ASSEMBLY_FOUNDRY_TOKEN=...` for this folder (gitignored) |
 
 ## Development
 
-Source of truth for the CLI lives in the main [assembly-api](https://github.com/assembly-industries/assembly-api) monorepo under `cli/`. Releases are published from this repository for public distribution.
-
-To publish a new version:
+Source of truth lives in the [assembly-api](https://github.com/assembly-industries/assembly-api) monorepo under `cli/`. Releases are published to the public [foundry-cli](https://github.com/assembly-industries/foundry-cli) repo.
 
 ```bash
 cd cli/
-gh release create v0.1.1 foundry install.sh \
+# Re-publish dev build (same version, replaces release assets)
+gh release upload v0.1.0 foundry install.sh \
   --repo assembly-industries/foundry-cli \
-  --title "Foundry CLI v0.1.1"
+  --clobber
 ```
